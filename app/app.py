@@ -4,8 +4,8 @@ Uses a pre-trained RandomForestRegressor to support suitability predictions
 and ranking of Transparent Conducting Oxide materials for fluorescent lamp coatings.
 """
 
-import os
-import sys
+import io
+from supabase import create_client
 import pandas as pd
 import numpy as np
 import joblib
@@ -15,10 +15,17 @@ import plotly.graph_objects as go
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 # Paths
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(BASE_DIR, "data", "tco_materials.csv")
-MODEL_PATH = os.path.join(BASE_DIR, "model", "random_forest.pkl")
-SCALER_PATH = os.path.join(BASE_DIR, "model", "scaler.pkl")
+# Supabase Storage
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+BUCKET_NAME = "tco-files"
+
+DATA_PATH = "data/tco_materials.csv"
+MODEL_PATH = "model/random_forest.pkl"
+SCALER_PATH = "model/scaler.pkl"
 
 FEATURE_COLS = [
     "Electrical_Conductivity",
@@ -54,16 +61,34 @@ COST_LEVEL_MAP = {
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(DATA_PATH)
+    file_bytes = (
+        supabase.storage
+        .from_(BUCKET_NAME)
+        .download(DATA_PATH)
+    )
+
+    df = pd.read_csv(io.BytesIO(file_bytes))
     return df
 
 
 @st.cache_resource
 def load_model_and_scaler():
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-    return model, scaler
+    model_bytes = (
+        supabase.storage
+        .from_(BUCKET_NAME)
+        .download(MODEL_PATH)
+    )
 
+    scaler_bytes = (
+        supabase.storage
+        .from_(BUCKET_NAME)
+        .download(SCALER_PATH)
+    )
+
+    model = joblib.load(io.BytesIO(model_bytes))
+    scaler = joblib.load(io.BytesIO(scaler_bytes))
+
+    return model, scaler
 
 def map_user_requirements(user_inputs: dict) -> np.ndarray:
     """Convert qualitative user choices into the numerical feature vector
