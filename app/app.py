@@ -5,7 +5,9 @@ and ranking of Transparent Conducting Oxide materials for fluorescent lamp coati
 """
 
 import io
-from supabase import create_client
+import os
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 import joblib
@@ -15,11 +17,18 @@ import plotly.graph_objects as go
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 # Paths
-# Supabase Storage
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+BASE_DIR = Path(__file__).resolve().parent.parent
+LOCAL_DATA_PATH = BASE_DIR / "data" / "tco_materials.csv"
+LOCAL_MODEL_PATH = BASE_DIR / "model" / "random_forest.pkl"
+LOCAL_SCALER_PATH = BASE_DIR / "model" / "scaler.pkl"
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL"))
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY"))
+supabase = None
+if SUPABASE_URL and SUPABASE_KEY:
+    from supabase import create_client
+
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 BUCKET_NAME = "tco-files"
 
@@ -61,34 +70,36 @@ COST_LEVEL_MAP = {
 
 @st.cache_data
 def load_data():
-    file_bytes = (
-        supabase.storage
-        .from_(BUCKET_NAME)
-        .download(DATA_PATH)
-    )
+    if supabase:
+        try:
+            file_bytes = supabase.storage.from_(BUCKET_NAME).download(DATA_PATH)
+            return pd.read_csv(io.BytesIO(file_bytes))
+        except Exception as exc:
+            st.warning(
+                "Supabase Storage could not provide the dataset; using the "
+                f"bundled dataset instead. Details: {exc}"
+            )
 
-    df = pd.read_csv(io.BytesIO(file_bytes))
-    return df
+    return pd.read_csv(LOCAL_DATA_PATH)
 
 
 @st.cache_resource
 def load_model_and_scaler():
-    model_bytes = (
-        supabase.storage
-        .from_(BUCKET_NAME)
-        .download(MODEL_PATH)
-    )
+    if supabase:
+        try:
+            model_bytes = supabase.storage.from_(BUCKET_NAME).download(MODEL_PATH)
+            scaler_bytes = supabase.storage.from_(BUCKET_NAME).download(SCALER_PATH)
+            return (
+                joblib.load(io.BytesIO(model_bytes)),
+                joblib.load(io.BytesIO(scaler_bytes)),
+            )
+        except Exception as exc:
+            st.warning(
+                "Supabase Storage could not provide the model files; using the "
+                f"bundled model instead. Details: {exc}"
+            )
 
-    scaler_bytes = (
-        supabase.storage
-        .from_(BUCKET_NAME)
-        .download(SCALER_PATH)
-    )
-
-    model = joblib.load(io.BytesIO(model_bytes))
-    scaler = joblib.load(io.BytesIO(scaler_bytes))
-
-    return model, scaler
+    return joblib.load(LOCAL_MODEL_PATH), joblib.load(LOCAL_SCALER_PATH)
 
 def map_user_requirements(user_inputs: dict) -> np.ndarray:
     """Convert qualitative user choices into the numerical feature vector

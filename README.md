@@ -200,13 +200,14 @@ Then open the URL shown in the terminal (usually http://localhost:8501).
 
 ## Deploying to the Cloud
 
-The application is configured for **Streamlit Community Cloud** with Supabase
-Storage used for the dataset and trained model artifacts.
+The application runs on **Streamlit Community Cloud**. It uses the dataset and
+trained model files committed in this repository by default. Supabase Storage
+is optional and can be used to serve updated artifacts without changing code.
 
-### 1. Prepare Supabase Storage
+### Optional: Configure Supabase Storage
 
-Create a Storage bucket named `tco-files` and upload these files using the
-same paths:
+Create a Storage bucket named `tco-files` and upload these files using the same
+paths:
 
 ```
 data/tco_materials.csv
@@ -217,7 +218,10 @@ model/scaler.pkl
 Use a read-only/public bucket policy appropriate for your Supabase project, or
 use a server-side key with storage access. Do not commit the key to Git.
 
-### 2. Publish the repository
+If a Supabase file is missing or the credentials are invalid, the app displays
+a warning and automatically uses the bundled repository files instead.
+
+### Deploy the repository
 
 Push this repository to GitHub. In Streamlit Community Cloud, choose **New
 app**, select the repository and branch, and set the main file to:
@@ -226,9 +230,10 @@ app**, select the repository and branch, and set the main file to:
 app/app.py
 ```
 
-### 3. Add Streamlit Cloud secrets
+### Optional: Add Streamlit Cloud secrets
 
-In the app's **Settings > Secrets** panel, add:
+Only add these secrets when using Supabase Storage. In the app's **Settings >
+Secrets** panel, add:
 
 ```toml
 SUPABASE_URL = "https://your-project.supabase.co"
