@@ -232,13 +232,18 @@ app/app.py
 
 ### Optional: Add Streamlit Cloud secrets
 
-Only add these secrets when using Supabase Storage. In the app's **Settings >
-Secrets** panel, add:
+Only add these secrets when using Supabase Storage. The default is `false`, so
+the app uses the files committed in GitHub and does not contact Supabase. In
+the app's **Settings > Secrets** panel, add:
 
 ```toml
 SUPABASE_URL = "https://your-project.supabase.co"
 SUPABASE_KEY = "your-supabase-key"
+USE_SUPABASE = "false"
 ```
+
+Set `USE_SUPABASE = "true"` only after the bucket paths and Storage permissions
+have been tested.
 
 The local equivalent is shown in `.streamlit/secrets.toml.example`. The real
 `.streamlit/secrets.toml` file is ignored by Git.

@@ -24,8 +24,11 @@ LOCAL_SCALER_PATH = BASE_DIR / "model" / "scaler.pkl"
 
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL"))
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY"))
+USE_SUPABASE = str(
+    st.secrets.get("USE_SUPABASE", os.getenv("USE_SUPABASE", "false"))
+).lower() == "true"
 supabase = None
-if SUPABASE_URL and SUPABASE_KEY:
+if USE_SUPABASE and SUPABASE_URL and SUPABASE_KEY:
     from supabase import create_client
 
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -70,7 +73,7 @@ COST_LEVEL_MAP = {
 
 @st.cache_data
 def load_data():
-    if supabase:
+    if USE_SUPABASE and supabase:
         try:
             file_bytes = supabase.storage.from_(BUCKET_NAME).download(DATA_PATH)
             return pd.read_csv(io.BytesIO(file_bytes))
@@ -85,7 +88,7 @@ def load_data():
 
 @st.cache_resource
 def load_model_and_scaler():
-    if supabase:
+    if USE_SUPABASE and supabase:
         try:
             model_bytes = supabase.storage.from_(BUCKET_NAME).download(MODEL_PATH)
             scaler_bytes = supabase.storage.from_(BUCKET_NAME).download(SCALER_PATH)
