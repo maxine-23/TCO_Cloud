@@ -196,8 +196,12 @@ def main():
     st.markdown(
         """
         <style>
-        .main-header {font-size: 2.2rem; font-weight: 700; color: #1f4e79;}
-        .sub-header {font-size: 1.3rem; color: #2e75b6; margin-top: 1rem;}
+        h1, h2, h3 {color: #63d9ff !important; font-weight: 800 !important;}
+        h1 {font-size: 3rem !important; line-height: 1.15 !important;}
+        h2 {font-size: 2rem !important; line-height: 1.2 !important;}
+        h3 {font-size: 1.45rem !important; line-height: 1.25 !important;}
+        .main-header {font-size: 3rem; line-height: 1.15; font-weight: 800; color: #63d9ff;}
+        .sub-header {font-size: 1.5rem; color: #63d9ff; margin-top: 1rem;}
         .metric-card {background-color: #f0f7ff; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #2e75b6;}
         </style>
         """,
